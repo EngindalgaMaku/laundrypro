@@ -21,6 +21,9 @@ const errorHandler = require("./middleware/errorHandler");
 const notFound = require("./middleware/notFound");
 const tenantMiddleware = require("./middleware/tenant");
 
+// Import database
+const { connectDatabase } = require("./config/database");
+
 const app = express();
 
 // Trust proxy for rate limiting
