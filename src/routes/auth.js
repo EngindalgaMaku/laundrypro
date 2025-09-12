@@ -144,9 +144,16 @@ router.post("/register", async (req, res) => {
 // @access  Public
 router.post("/login", async (req, res) => {
   try {
+    console.log("🔐 Login request received:", { 
+      email: req.body.email, 
+      tenantId: req.body.tenantId,
+      hasPassword: !!req.body.password 
+    });
+
     const { email, password, tenantId } = req.body;
 
     if (!email || !password) {
+      console.log("❌ Missing email or password");
       return res.status(400).json({
         success: false,
         message: "Email ve şifre gerekli",
@@ -159,6 +166,8 @@ router.post("/login", async (req, res) => {
       whereClause.tenantId = tenantId;
     }
 
+    console.log("🔍 Searching user with:", whereClause);
+
     const user = await prisma.user.findFirst({
       where: whereClause,
       include: {
@@ -166,14 +175,20 @@ router.post("/login", async (req, res) => {
       },
     });
 
+    console.log("👤 User found:", user ? { id: user.id, email: user.email, tenantId: user.tenantId } : null);
+
     if (!user) {
+      console.log("❌ User not found");
       return res.status(401).json({
         success: false,
         message: "Geçersiz email veya şifre",
       });
     }
 
+    console.log("🏢 Tenant info:", { id: user.tenant.id, name: user.tenant.name, isActive: user.tenant.isActive });
+
     if (!user.tenant.isActive) {
+      console.log("❌ Tenant not active");
       return res.status(403).json({
         success: false,
         message: "Tenant hesabı aktif değil",
@@ -181,9 +196,12 @@ router.post("/login", async (req, res) => {
     }
 
     // Check password
+    console.log("🔑 Checking password...");
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("🔑 Password match:", isMatch);
 
     if (!isMatch) {
+      console.log("❌ Password mismatch");
       return res.status(401).json({
         success: false,
         message: "Geçersiz email veya şifre",
@@ -191,13 +209,17 @@ router.post("/login", async (req, res) => {
     }
 
     // Update last login
+    console.log("📝 Updating last login...");
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
     // Generate tokens
+    console.log("🎫 Generating tokens...");
     const { accessToken, refreshToken } = generateTokens(user);
+
+    console.log("✅ Login successful for user:", user.email);
 
     res.json({
       success: true,
@@ -222,7 +244,8 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("❌ Login error details:", error);
+    console.error("❌ Error stack:", error.stack);
     res.status(500).json({
       success: false,
       message: "Giriş hatası",
