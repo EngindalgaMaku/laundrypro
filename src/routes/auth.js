@@ -418,19 +418,43 @@ router.get("/me", auth, (req, res) => {
 router.put("/profile", auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { firstName, lastName, phone } = req.body;
+    const { firstName, lastName, email, phone } = req.body;
 
     console.log("🔄 Updating profile for user:", userId);
-    console.log("📝 Update data:", { firstName, lastName, phone });
+    console.log("📝 Update data:", { firstName, lastName, email, phone });
+    console.log("📝 Current user email:", req.user.email);
+    console.log("📝 New email:", email);
+
+    // Check if email is being changed and if it's already in use
+    if (email && email !== req.user.email) {
+      const existingUser = await prisma.user.findFirst({
+        where: { 
+          email: email,
+          id: { not: userId }
+        },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Bu email adresi zaten kullanılıyor",
+        });
+      }
+    }
+
+    // Prepare update data - only include defined fields
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+
+    console.log("📝 Final update data:", updateData);
 
     // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        phone: phone || undefined,
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -444,6 +468,7 @@ router.put("/profile", auth, async (req, res) => {
     });
 
     console.log("✅ Profile updated successfully");
+    console.log("📊 Updated user data:", updatedUser);
 
     res.json({
       success: true,
