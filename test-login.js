@@ -1,28 +1,61 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 async function testLogin() {
   try {
-    const email = 'admin@demo.com';
-    const password = 'demo123';
+    const email = 'mackaengin@gmail.com';
+    const password = '123456'; // Test with correct password
     const tenantId = 'demo-tenant-1';
     
-    // Simulate the login process
-    console.log('Testing login process...');
+    console.log('🔐 Testing login for:', email);
     
-    // Check if JWT secrets are available
+    // Find user in database
+    const user = await prisma.user.findFirst({
+      where: {
+        email: email,
+        isActive: true,
+        tenantId: tenantId
+      },
+      include: {
+        tenant: true
+      }
+    });
+
+    if (!user) {
+      console.log('❌ User not found');
+      return;
+    }
+
+    console.log('✅ User found:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      tenantActive: user.tenant.isActive
+    });
+
+    // Test password comparison
+    console.log('🔑 Testing password...');
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('🔑 Password match:', isMatch);
+
+    if (!isMatch) {
+      console.log('❌ Password does not match');
+      return;
+    }
+
+    // Test token generation
     const jwtSecret = process.env.JWT_SECRET || 'halitr-super-secret-jwt-key-2024';
     const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'halitr-super-secret-refresh-key-2024';
     
-    console.log('JWT_SECRET available:', !!jwtSecret);
-    console.log('JWT_REFRESH_SECRET available:', !!jwtRefreshSecret);
-    
-    // Test token generation
     const payload = {
-      userId: '6990b262-b828-4408-b335-11dae88c606d',
-      email: email,
-      role: 'ADMIN',
-      tenantId: tenantId,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
     };
     
     const accessToken = jwt.sign(payload, jwtSecret, {
@@ -33,13 +66,13 @@ async function testLogin() {
       expiresIn: '7d',
     });
     
-    console.log('Access token generated:', !!accessToken);
-    console.log('Refresh token generated:', !!refreshToken);
-    
-    console.log('Login test completed successfully!');
+    console.log('✅ Tokens generated successfully');
+    console.log('✅ Login test completed - user should be able to login!');
     
   } catch (error) {
-    console.error('Login test error:', error);
+    console.error('❌ Login test error:', error);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
