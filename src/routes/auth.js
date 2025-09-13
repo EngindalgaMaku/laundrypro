@@ -412,6 +412,120 @@ router.get("/me", auth, (req, res) => {
   });
 });
 
+// @route   PUT /api/v1/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put("/profile", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { firstName, lastName, phone } = req.body;
+
+    console.log("🔄 Updating profile for user:", userId);
+    console.log("📝 Update data:", { firstName, lastName, phone });
+
+    // Update user profile
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        phone: phone || undefined,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    console.log("✅ Profile updated successfully");
+
+    res.json({
+      success: true,
+      message: "Profil başarıyla güncellendi",
+      data: {
+        user: updatedUser,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Profile update error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Profil güncellenirken hata oluştu",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// @route   PUT /api/v1/auth/change-password
+// @desc    Change user password
+// @access  Private
+router.put("/change-password", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    console.log("🔄 Changing password for user:", userId);
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Mevcut şifre ve yeni şifre gerekli",
+      });
+    }
+
+    // Get current user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Kullanıcı bulunamadı",
+      });
+    }
+
+    // Check current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Mevcut şifre yanlış",
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    console.log("✅ Password changed successfully");
+
+    res.json({
+      success: true,
+      message: "Şifre başarıyla değiştirildi",
+    });
+  } catch (error) {
+    console.error("❌ Password change error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Şifre değiştirilirken hata oluştu",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // @route   POST /api/v1/auth/logout
 // @desc    Logout user (token invalidation would be handled by client)
 // @access  Private
