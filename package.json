@@ -1,5 +1,5 @@
 {
-  "name": "halitr-backend",
+  "name": "laundrypro-backend",
   "version": "1.0.0",
   "description": "HALİTR - Halı Yıkamacısı SaaS Backend API",
   "main": "src/app.js",
@@ -43,8 +43,8 @@
     "supertest": "^6.3.3"
   },
   "keywords": [
-    "halitr",
-    "halı yıkama",
+    "laundrypro",
+    "laundry management",
     "saas",
     "api",
     "carpet cleaning"

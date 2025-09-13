@@ -20,6 +20,10 @@ const notificationRoutes = require("./routes/notification");
 const errorHandler = require("./middleware/errorHandler");
 const notFound = require("./middleware/notFound");
 const tenantMiddleware = require("./middleware/tenant");
+const {
+  appSlugMiddleware,
+  appConfigurations,
+} = require("./middleware/appSlug");
 
 // Import database
 const { connectDatabase } = require("./config/database");
@@ -63,13 +67,88 @@ app.get("/health", (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
     version: process.env.API_VERSION || "v1",
+    supportedApps: Object.keys(appConfigurations),
+  });
+});
+
+// Apps info endpoint
+app.get("/apps", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Desteklenen uygulamalar",
+    data: {
+      apps: Object.keys(appConfigurations).map((slug) => ({
+        slug,
+        name: appConfigurations[slug].name,
+        type: appConfigurations[slug].type,
+        endpoints: {
+          register: `/api/v1/${slug}/auth/register`,
+          login: `/api/v1/${slug}/auth/login`,
+          dashboard: `/api/v1/${slug}/dashboard`,
+        },
+      })),
+    },
   });
 });
 
 // API routes
 const API_PREFIX = `/api/${process.env.API_VERSION || "v1"}`;
 
-app.use(`${API_PREFIX}/auth`, authRoutes);
+// Multi-app routes with app slug middleware
+app.use(`${API_PREFIX}/:appSlug/auth`, appSlugMiddleware, authRoutes);
+app.use(
+  `${API_PREFIX}/:appSlug/tenants`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  tenantRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/orders`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  orderRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/customers`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  customerRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/users`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  userRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/dashboard`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  dashboardRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/vehicles`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  vehicleRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/notifications`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  notificationRoutes
+);
+
+// Backward compatibility - legacy routes (without app slug)
+app.use(
+  `${API_PREFIX}/auth`,
+  (req, res, next) => {
+    req.appSlug = "laundry"; // Default to laundry for backward compatibility
+    req.appConfig = appConfigurations.laundry;
+    next();
+  },
+  authRoutes
+);
 app.use(`${API_PREFIX}/tenants`, tenantMiddleware, tenantRoutes);
 app.use(`${API_PREFIX}/orders`, tenantMiddleware, orderRoutes);
 app.use(`${API_PREFIX}/customers`, tenantMiddleware, customerRoutes);
@@ -87,12 +166,20 @@ const PORT = process.env.PORT || 3000;
 // Start server with database connection
 app.listen(PORT, async () => {
   console.log(
-    `🚀 HALİTR Backend API ${
+    `🚀 Multi-App Backend API ${
       process.env.NODE_ENV || "development"
     } modunda port ${PORT}'da çalışıyor`
   );
-  console.log(`📚 API Dokümantasyon: http://localhost:${PORT}${API_PREFIX}`);
+  console.log(`📚 API Base: http://localhost:${PORT}${API_PREFIX}`);
   console.log(`💚 Health Check: http://localhost:${PORT}/health`);
+  console.log(`📱 Apps Info: http://localhost:${PORT}/apps`);
+
+  console.log("\n📋 Desteklenen Uygulamalar:");
+  Object.keys(appConfigurations).forEach((slug) => {
+    console.log(`  • ${slug}: ${appConfigurations[slug].name}`);
+    console.log(`    - Register: ${API_PREFIX}/${slug}/auth/register`);
+    console.log(`    - Login: ${API_PREFIX}/${slug}/auth/login`);
+  });
 
   // Connect to database
   await connectDatabase();

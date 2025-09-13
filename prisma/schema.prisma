@@ -12,14 +12,15 @@ datasource db {
 
 // Tenant Model (Multi-tenant SaaS)
 model Tenant {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  domain      String?  @unique
-  subdomain   String?  @unique
-  settings    Json?    // Tenant-specific settings
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  domain      String?    @unique
+  subdomain   String?    @unique
+  type        TenantType @default(LAUNDRY_SERVICE) // App type
+  settings    Json?      // Tenant-specific settings
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   // Relations
   users       User[]
@@ -201,6 +202,15 @@ enum OrderStatus {
   READY         // Hazır
   DELIVERED     // Teslim Edildi
   CANCELLED     // İptal
+}
+
+enum TenantType {
+  LAUNDRY_SERVICE   // Halı yıkamacısı
+  RESTAURANT        // Restoran yönetimi
+  HOTEL             // Otel yönetimi
+  RETAIL            // Perakende satış
+  WORKSHOP          // Atölye/tamirci
+  HEALTHCARE        // Sağlık hizmetleri
 }
 
 enum NotificationType {

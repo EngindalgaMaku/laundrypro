@@ -27,25 +27,74 @@ const generateTokens = (user) => {
   return { accessToken, refreshToken };
 };
 
-// @route   POST /api/v1/auth/register
-// @desc    Register new tenant and admin user
+// @route   POST /api/v1/:appSlug/auth/register
+// @desc    Register new tenant and admin user for specific app
 // @access  Public
 router.post("/register", async (req, res) => {
   try {
-    const { tenantName, domain, firstName, lastName, email, phone, password } =
-      req.body;
+    const { businessInfo, accountInfo, deviceInfo } = req.body;
+    const appSlug = req.appSlug;
+    const appConfig = req.appConfig;
 
-    // Validate required fields
-    if (!tenantName || !firstName || !lastName || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Gerekli alanları doldurun",
-      });
+    console.log(`📱 ${appConfig.name} kayıt isteği:`, {
+      businessInfo: businessInfo?.name,
+      email: accountInfo?.email,
+      appSlug,
+    });
+
+    // Mobile app için yeni format kontrolü
+    if (businessInfo && accountInfo) {
+      const { name: tenantName, country, city, phone, email } = businessInfo;
+      const { username, password } = accountInfo;
+
+      // Validate required fields
+      if (!tenantName || !username || !password || !phone) {
+        return res.status(400).json({
+          success: false,
+          message: "Gerekli alanları doldurun",
+        });
+      }
+
+      // Use mobile format
+      var finalTenantName = tenantName;
+      var finalFirstName = username;
+      var finalLastName = "";
+      var finalEmail = email || `${username}@${appSlug}.local`; // Default email if not provided
+      var finalPhone = phone;
+      var finalPassword = password;
+      var finalDomain = null;
+    } else {
+      // Backward compatibility - web format
+      const {
+        tenantName,
+        domain,
+        firstName,
+        lastName,
+        email,
+        phone,
+        password,
+      } = req.body;
+
+      // Validate required fields
+      if (!tenantName || !firstName || !lastName || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: "Gerekli alanları doldurun",
+        });
+      }
+
+      var finalTenantName = tenantName;
+      var finalFirstName = firstName;
+      var finalLastName = lastName;
+      var finalEmail = email;
+      var finalPhone = phone;
+      var finalPassword = password;
+      var finalDomain = domain;
     }
 
     // Check if email already exists
     const existingUser = await prisma.user.findFirst({
-      where: { email },
+      where: { email: finalEmail },
     });
 
     if (existingUser) {
@@ -56,9 +105,9 @@ router.post("/register", async (req, res) => {
     }
 
     // Check if domain already exists
-    if (domain) {
+    if (finalDomain) {
       const existingTenant = await prisma.tenant.findUnique({
-        where: { domain },
+        where: { domain: finalDomain },
       });
 
       if (existingTenant) {
@@ -71,34 +120,56 @@ router.post("/register", async (req, res) => {
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(finalPassword, salt);
 
     // Create tenant and admin user in transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create tenant
-      const tenant = await tx.tenant.create({
-        data: {
-          name: tenantName,
-          domain: domain || null,
-          settings: {
-            currency: "TRY",
-            timezone: "Europe/Istanbul",
-            language: "tr",
+      // Create tenant with app-specific settings
+      const tenantData = {
+        name: finalTenantName,
+        domain: finalDomain || null,
+        type: appConfig.type, // App-specific type
+        settings: {
+          ...appConfig.defaultSettings,
+          appSlug: appSlug,
+          registrationInfo: {
+            appType: appSlug,
+            appName: appConfig.name,
+            country: businessInfo?.country || "Türkiye",
+            city: businessInfo?.city || null,
+            deviceInfo: deviceInfo || null,
           },
         },
+      };
+
+      console.log("🏢 Creating tenant:", {
+        name: tenantData.name,
+        type: tenantData.type,
+        appSlug,
+      });
+
+      const tenant = await tx.tenant.create({
+        data: tenantData,
       });
 
       // Create admin user
+      const userData = {
+        tenantId: tenant.id,
+        email: finalEmail,
+        phone: finalPhone || null,
+        password: hashedPassword,
+        firstName: finalFirstName,
+        lastName: finalLastName,
+        role: "ADMIN",
+      };
+
+      console.log("👤 Creating user:", {
+        email: userData.email,
+        firstName: userData.firstName,
+      });
+
       const user = await tx.user.create({
-        data: {
-          tenantId: tenant.id,
-          email,
-          phone: phone || null,
-          password: hashedPassword,
-          firstName,
-          lastName,
-          role: "ADMIN",
-        },
+        data: userData,
       });
 
       return { tenant, user };
@@ -107,10 +178,20 @@ router.post("/register", async (req, res) => {
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(result.user);
 
+    console.log(
+      `✅ ${appConfig.name} için hesap oluşturuldu:`,
+      result.user.email
+    );
+
     res.status(201).json({
       success: true,
-      message: "Hesap başarıyla oluşturuldu",
+      message: `${appConfig.name} hesabınız başarıyla oluşturuldu`,
       data: {
+        app: {
+          slug: appSlug,
+          name: appConfig.name,
+          type: appConfig.type,
+        },
         user: {
           id: result.user.id,
           email: result.user.email,
@@ -122,6 +203,7 @@ router.post("/register", async (req, res) => {
           id: result.tenant.id,
           name: result.tenant.name,
           domain: result.tenant.domain,
+          type: result.tenant.type,
         },
         tokens: {
           accessToken,
@@ -130,7 +212,7 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error(`❌ ${req.appConfig?.name || "App"} kayıt hatası:`, error);
     res.status(500).json({
       success: false,
       message: "Hesap oluşturma hatası",
@@ -139,15 +221,19 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// @route   POST /api/v1/auth/login
-// @desc    Login user
+// @route   POST /api/v1/:appSlug/auth/login
+// @desc    Login user for specific app
 // @access  Public
 router.post("/login", async (req, res) => {
   try {
-    console.log("🔐 Login request received:", { 
-      email: req.body.email, 
+    const appSlug = req.appSlug;
+    const appConfig = req.appConfig;
+
+    console.log(`🔐 ${appConfig.name} login request:`, {
+      email: req.body.email,
       tenantId: req.body.tenantId,
-      hasPassword: !!req.body.password 
+      hasPassword: !!req.body.password,
+      appSlug,
     });
 
     const { email, password, tenantId } = req.body;
@@ -175,7 +261,10 @@ router.post("/login", async (req, res) => {
       },
     });
 
-    console.log("👤 User found:", user ? { id: user.id, email: user.email, tenantId: user.tenantId } : null);
+    console.log(
+      "👤 User found:",
+      user ? { id: user.id, email: user.email, tenantId: user.tenantId } : null
+    );
 
     if (!user) {
       console.log("❌ User not found");
@@ -185,7 +274,11 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    console.log("🏢 Tenant info:", { id: user.tenant.id, name: user.tenant.name, isActive: user.tenant.isActive });
+    console.log("🏢 Tenant info:", {
+      id: user.tenant.id,
+      name: user.tenant.name,
+      isActive: user.tenant.isActive,
+    });
 
     if (!user.tenant.isActive) {
       console.log("❌ Tenant not active");
