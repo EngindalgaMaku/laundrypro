@@ -51,6 +51,41 @@ async function main() {
 
   console.log("✅ Created Super Admin");
 
+  // Create special demo tenant for mackaengin@gmail.com
+  const demoTenant = await prisma.tenant.create({
+    data: {
+      id: "demo-tenant-1",
+      name: "Engin'in Halı Yıkama",
+      type: "LAUNDRY_SERVICE",
+      domain: "engin.demo.local",
+      subdomain: "engin",
+      settings: {
+        location: {
+          city: "İstanbul",
+          district: "Kadıköy",
+        },
+        owner: "Engin Dalga",
+        phone: "+90 555 123 4567",
+      },
+    },
+  });
+
+  // Create Engin's user account
+  const enginUser = await prisma.user.create({
+    data: {
+      email: "mackaengin@gmail.com",
+      password: hashedPassword, // 123456
+      firstName: "Engin",
+      lastName: "Dalga",
+      role: "SUPER_ADMIN",
+      tenantId: demoTenant.id,
+      phone: "+90 555 123 4567",
+      lastLoginAt: new Date(),
+    },
+  });
+
+  console.log("✅ Created Engin's Account (mackaengin@gmail.com)");
+
   // Create Demo Tenants (Companies)
   const tenants = [
     {

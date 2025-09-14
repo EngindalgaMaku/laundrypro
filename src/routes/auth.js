@@ -428,9 +428,9 @@ router.put("/profile", auth, async (req, res) => {
     // Check if email is being changed and if it's already in use
     if (email && email !== req.user.email) {
       const existingUser = await prisma.user.findFirst({
-        where: { 
+        where: {
           email: email,
-          id: { not: userId }
+          id: { not: userId },
         },
       });
 
@@ -559,6 +559,74 @@ router.post("/logout", auth, (req, res) => {
     success: true,
     message: "Başarıyla çıkış yapıldı",
   });
+});
+
+// @route   GET /api/v1/auth/find-tenant
+// @desc    Find tenant by username/email for login
+// @access  Public
+router.get("/find-tenant", async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: "Username gerekli",
+      });
+    }
+
+    console.log("🔍 Finding tenant for username:", username);
+
+    // Find user by email
+    const user = await prisma.user.findFirst({
+      where: {
+        email: username,
+        isActive: true,
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Kullanıcı bulunamadı",
+      });
+    }
+
+    if (!user.tenant.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Tenant aktif değil",
+      });
+    }
+
+    console.log("✅ Tenant found:", user.tenant.name);
+
+    res.json({
+      success: true,
+      data: {
+        tenantId: user.tenant.id,
+        tenantName: user.tenant.name,
+        domain: user.tenant.domain,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Find tenant error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Tenant arama hatası",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 });
 
 module.exports = router;

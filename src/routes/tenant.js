@@ -51,41 +51,81 @@ router.get("/profile", auth, async (req, res) => {
 
 // @route   PUT /api/v1/tenants/profile
 // @desc    Update tenant profile
-// @access  Private (SUPER_ADMIN/Admin/Manager)
-router.put(
-  "/profile",
-  auth,
-  authorize("SUPER_ADMIN", "ADMIN", "MANAGER"),
-  async (req, res) => {
-    try {
-      const { name, domain, settings } = req.body;
+// @access  Private (All authenticated users can update their tenant)
+router.put("/profile", auth, async (req, res) => {
+  try {
+    console.log("🔄 Tenant profile update request:");
+    console.log("  - User ID:", req.user.id);
+    console.log("  - User Role:", req.user.role);
+    console.log("  - Tenant ID:", req.user.tenantId);
+    console.log("  - Request Body:", JSON.stringify(req.body, null, 2));
 
-      const updateData = {};
-      if (name) updateData.name = name;
-      if (domain) updateData.domain = domain;
-      if (settings) updateData.settings = settings;
+    const { name, domain, subdomain, settings } = req.body;
 
-      const tenant = await prisma.tenant.update({
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (domain) updateData.domain = domain;
+    if (subdomain) updateData.subdomain = subdomain;
+
+    // Handle settings - merge with existing settings or create new
+    if (settings) {
+      const currentTenant = await prisma.tenant.findUnique({
         where: { id: req.user.tenantId },
-        data: updateData,
+        select: { settings: true },
       });
 
-      res.json({
-        success: true,
-        message: "Tenant profili güncellendi",
-        data: { tenant },
-      });
-    } catch (error) {
-      console.error("Update tenant profile error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Tenant profili güncelleme hatası",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
+      // Merge settings with existing settings
+      updateData.settings = {
+        ...(currentTenant?.settings || {}),
+        ...settings,
+      };
     }
+
+    console.log(
+      "🔄 Update data prepared:",
+      JSON.stringify(updateData, null, 2)
+    );
+
+    const tenant = await prisma.tenant.update({
+      where: { id: req.user.tenantId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        domain: true,
+        subdomain: true,
+        settings: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            users: true,
+            customers: true,
+            orders: true,
+          },
+        },
+      },
+    });
+
+    console.log(
+      "✅ Tenant updated successfully:",
+      JSON.stringify(tenant, null, 2)
+    );
+
+    res.json({
+      success: true,
+      message: "Tenant profili güncellendi",
+      data: { tenant },
+    });
+  } catch (error) {
+    console.error("❌ Update tenant profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Tenant profili güncelleme hatası",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 // @route   GET /api/v1/tenants/stats
 // @desc    Get tenant statistics
