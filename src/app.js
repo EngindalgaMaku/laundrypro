@@ -16,6 +16,9 @@ const dashboardRoutes = require("./routes/dashboard");
 const vehicleRoutes = require("./routes/vehicle");
 const notificationRoutes = require("./routes/notification");
 const systemRoutes = require("./routes/system");
+const reportsRoutes = require("./routes/reports");
+const inventoryRoutes = require("./routes/inventory");
+const deliveryRoutes = require("./routes/delivery");
 
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
@@ -145,6 +148,24 @@ app.use(
   tenantMiddleware,
   systemRoutes
 );
+app.use(
+  `${API_PREFIX}/:appSlug/reports`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  reportsRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/inventory`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  inventoryRoutes
+);
+app.use(
+  `${API_PREFIX}/:appSlug/delivery`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  deliveryRoutes
+);
 
 // Backward compatibility - legacy routes (without app slug)
 app.use(
@@ -164,6 +185,9 @@ app.use(`${API_PREFIX}/dashboard`, tenantMiddleware, dashboardRoutes);
 app.use(`${API_PREFIX}/vehicles`, tenantMiddleware, vehicleRoutes);
 app.use(`${API_PREFIX}/notifications`, tenantMiddleware, notificationRoutes);
 app.use(`${API_PREFIX}/system`, tenantMiddleware, systemRoutes);
+app.use(`${API_PREFIX}/reports`, tenantMiddleware, reportsRoutes);
+app.use(`${API_PREFIX}/inventory`, tenantMiddleware, inventoryRoutes);
+app.use(`${API_PREFIX}/delivery`, tenantMiddleware, deliveryRoutes);
 
 // Error handling middleware
 app.use(notFound);
