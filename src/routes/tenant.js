@@ -51,11 +51,11 @@ router.get("/profile", auth, async (req, res) => {
 
 // @route   PUT /api/v1/tenants/profile
 // @desc    Update tenant profile
-// @access  Private (Admin/Manager)
+// @access  Private (SUPER_ADMIN/Admin/Manager)
 router.put(
   "/profile",
   auth,
-  authorize("ADMIN", "MANAGER"),
+  authorize("SUPER_ADMIN", "ADMIN", "MANAGER"),
   async (req, res) => {
     try {
       const { name, domain, settings } = req.body;
