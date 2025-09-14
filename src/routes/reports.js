@@ -127,14 +127,14 @@ router.get("/financial/summary", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Finansal özet başarıyla alındı",
+      message: "Financial summary retrieved successfully",
       data: summary,
     });
   } catch (error) {
     console.error("Financial summary error:", error);
     res.status(500).json({
       success: false,
-      message: "Finansal özet alınırken hata oluştu",
+      message: "Error occurred while retrieving financial summary",
       data: {
         totalRevenue: 0,
         totalExpenses: 0,
@@ -265,14 +265,14 @@ router.get("/financial/revenue", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Gelir analizi başarıyla alındı",
+      message: "Revenue analysis retrieved successfully",
       data: revenueData,
     });
   } catch (error) {
     console.error("Revenue analytics error:", error);
     res.status(500).json({
       success: false,
-      message: "Gelir analizi alınırken hata oluştu",
+      message: "Error occurred while retrieving revenue analysis",
       data: {
         totalRevenue: 0,
         revenueGrowth: 0,
@@ -385,14 +385,14 @@ router.get("/financial/customers", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Müşteri analizi başarıyla alındı",
+      message: "Customer analysis retrieved successfully",
       data: customerData,
     });
   } catch (error) {
     console.error("Customer analytics error:", error);
     res.status(500).json({
       success: false,
-      message: "Müşteri analizi alınırken hata oluştu",
+      message: "Error occurred while retrieving customer analysis",
       data: {
         totalCustomers: 0,
         newCustomers: 0,
@@ -481,14 +481,14 @@ router.get("/financial/expenses", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Gider analizi başarıyla alındı",
+      message: "Expense analysis retrieved successfully",
       data: expenseData,
     });
   } catch (error) {
     console.error("Expense analytics error:", error);
     res.status(500).json({
       success: false,
-      message: "Gider analizi alınırken hata oluştu",
+      message: "Error occurred while retrieving expense analysis",
       data: {
         totalExpenses: 0,
         expenseGrowth: 0,
@@ -581,14 +581,14 @@ router.get("/financial/profit-loss", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Kâr-Zarar raporu başarıyla alındı",
+      message: "Profit-Loss report retrieved successfully",
       data: profitLossData,
     });
   } catch (error) {
     console.error("Profit loss report error:", error);
     res.status(500).json({
       success: false,
-      message: "Kâr-Zarar raporu alınırken hata oluştu",
+      message: "Error occurred while retrieving profit-loss report",
       data: {
         revenue: 0,
         expenses: 0,

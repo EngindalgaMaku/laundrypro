@@ -132,7 +132,7 @@ router.get("/dashboard", auth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Teslimat özeti başarıyla alındı",
+      message: "Delivery summary retrieved successfully",
       data: dashboardData,
     });
   } catch (error) {
@@ -493,14 +493,14 @@ router.post("/deliveries", auth, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Teslimat başarıyla oluşturuldu",
+      message: "Delivery created successfully",
       data: newDelivery,
     });
   } catch (error) {
     console.error("Create delivery error:", error);
     res.status(500).json({
       success: false,
-      message: "Teslimat oluşturulurken hata oluştu",
+      message: "Error occurred while creating delivery",
     });
   }
 });

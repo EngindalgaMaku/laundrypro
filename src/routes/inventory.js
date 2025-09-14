@@ -90,7 +90,7 @@ router.get("/summary", auth, async (req, res) => {
     console.error("Inventory summary error:", error);
     res.status(500).json({
       success: false,
-      message: "Envanter özeti alınırken hata oluştu",
+      message: "Error occurred while retrieving inventory summary",
       data: {
         totalItems: 0,
         lowStockItems: 0,
@@ -255,7 +255,7 @@ router.get("/alerts/low-stock", auth, async (req, res) => {
     console.error("Get low stock alerts error:", error);
     res.status(500).json({
       success: false,
-      message: "Düşük stok uyarıları alınırken hata oluştu",
+      message: "Error occurred while retrieving low stock alerts",
       data: [],
     });
   }

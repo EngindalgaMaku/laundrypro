@@ -1,6 +1,6 @@
 const appConfigurations = {
   laundry: {
-    name: "HALİTR - Halı Yıkamacısı",
+    name: "LaundryPro - Halı & Koltuk Yıkama",
     type: "LAUNDRY_SERVICE",
     defaultSettings: {
       currency: "TRY",
