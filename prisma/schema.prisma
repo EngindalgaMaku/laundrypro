@@ -23,11 +23,13 @@ model Tenant {
   updatedAt   DateTime   @updatedAt
 
   // Relations
-  users       User[]
-  customers   Customer[]
-  orders      Order[]
-  vehicles    Vehicle[]
-  services    Service[]
+  users          User[]
+  customers      Customer[]
+  orders         Order[]
+  vehicles       Vehicle[]
+  services       Service[]
+  systemSettings SystemSettings?
+  systemBackups  SystemBackup[]
 
   @@map("tenants")
 }
@@ -48,9 +50,11 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orders      Order[]
-  notifications Notification[]
+  tenant               Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders               Order[]
+  notifications        Notification[]
+  notificationSettings UserNotificationSettings?
+  systemBackups        SystemBackup[]
 
   @@unique([email, tenantId])
   @@map("users")
@@ -188,6 +192,67 @@ model Notification {
   @@map("notifications")
 }
 
+// User Notification Settings Model
+model UserNotificationSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  emailNotifications  Boolean  @default(true)
+  smsNotifications    Boolean  @default(false)
+  pushNotifications   Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_settings")
+}
+
+// System Settings Model
+model SystemSettings {
+  id                 String   @id @default(uuid())
+  tenantId           String   @unique
+  systemName         String   @default("Halı Yıkama Sistemi")
+  systemVersion      String   @default("1.0.0")
+  maintenanceMode    Boolean  @default(false)
+  debugMode          Boolean  @default(false)
+  sessionTimeout     Int      @default(30)
+  passwordMinLength  Int      @default(8)
+  twoFactorAuth      Boolean  @default(false)
+  autoBackup         Boolean  @default(true)
+  backupFrequency    String   @default("daily") // daily, weekly, monthly
+  backupRetention    Int      @default(30)
+  apiRateLimit       Int      @default(1000)
+  apiTimeout         Int      @default(30)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("system_settings")
+}
+
+// System Backup Model
+model SystemBackup {
+  id           String      @id @default(uuid())
+  tenantId     String
+  userId       String
+  backupType   BackupType  @default(MANUAL)
+  status       BackupStatus @default(PENDING)
+  fileName     String
+  backupSize   BigInt?
+  errorMessage String?
+  createdAt    DateTime    @default(now())
+  completedAt  DateTime?
+
+  // Relations
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id])
+
+  @@map("system_backups")
+}
+
 // Enums
 enum UserRole {
   SUPER_ADMIN
@@ -223,4 +288,17 @@ enum NotificationType {
   SYSTEM
   SMS
   WHATSAPP
+}
+
+enum BackupType {
+  MANUAL
+  AUTOMATIC
+  SCHEDULED
+}
+
+enum BackupStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }

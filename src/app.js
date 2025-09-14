@@ -15,6 +15,7 @@ const userRoutes = require("./routes/user");
 const dashboardRoutes = require("./routes/dashboard");
 const vehicleRoutes = require("./routes/vehicle");
 const notificationRoutes = require("./routes/notification");
+const systemRoutes = require("./routes/system");
 
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
@@ -138,6 +139,12 @@ app.use(
   tenantMiddleware,
   notificationRoutes
 );
+app.use(
+  `${API_PREFIX}/:appSlug/system`,
+  appSlugMiddleware,
+  tenantMiddleware,
+  systemRoutes
+);
 
 // Backward compatibility - legacy routes (without app slug)
 app.use(
@@ -156,6 +163,7 @@ app.use(`${API_PREFIX}/users`, tenantMiddleware, userRoutes);
 app.use(`${API_PREFIX}/dashboard`, tenantMiddleware, dashboardRoutes);
 app.use(`${API_PREFIX}/vehicles`, tenantMiddleware, vehicleRoutes);
 app.use(`${API_PREFIX}/notifications`, tenantMiddleware, notificationRoutes);
+app.use(`${API_PREFIX}/system`, tenantMiddleware, systemRoutes);
 
 // Error handling middleware
 app.use(notFound);
