@@ -28,29 +28,8 @@ async function seed() {
 
     console.log("✅ Demo tenant oluşturuldu:", demoTenant.name);
 
-    // SUPER_ADMIN kullanıcısı oluştur (sistem yöneticisi - tenant bağımsız)
+    // Demo Admin kullanıcısı oluştur
     const hashedPassword = await bcrypt.hash("demo123", 10);
-
-    const superAdmin = await prisma.user.upsert({
-      where: {
-        email_tenantId: {
-          email: "superadmin@system.com",
-          tenantId: demoTenant.id, // Temporary tenant assignment
-        },
-      },
-      update: {},
-      create: {
-        email: "superadmin@system.com",
-        password: hashedPassword,
-        firstName: "System",
-        lastName: "Administrator",
-        role: "SUPER_ADMIN",
-        tenantId: demoTenant.id,
-        isActive: true,
-      },
-    });
-
-    console.log("✅ Super Admin kullanıcısı oluşturuldu:", superAdmin.email);
 
     const demoAdmin = await prisma.user.upsert({
       where: {
@@ -257,13 +236,13 @@ async function seed() {
 
     console.log("\n🎉 Demo verileri başarıyla oluşturuldu!");
     console.log("\n📋 Demo Hesaplar:");
-    console.log(
-      "🔥 Super Admin: superadmin@system.com / demo123 (Sistem Yöneticisi)"
-    );
     console.log("👑 Admin: admin@demo.com / demo123");
     console.log("👨‍💼 Manager: manager@demo.com / demo123");
     console.log("👷 Employee: employee@demo.com / demo123");
     console.log("\n🏢 Tenant ID: demo-tenant-1");
+    console.log(
+      "\n🔥 Mevcut SUPER_ADMIN: mackaengin@gmail.com (sizin hesabınız)"
+    );
   } catch (error) {
     console.error("❌ Seed hatası:", error);
   } finally {
