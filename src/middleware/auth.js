@@ -99,33 +99,13 @@ const authorize = (...roles) => {
       });
     }
 
-    console.log("🔐 Authorization check:", {
-      userRole: req.user.role,
-      requiredRoles: roles,
-      userEmail: req.user.email,
-      isAuthorized: roles.includes(req.user.role),
-    });
-
     if (!roles.includes(req.user.role)) {
-      console.log("❌ Access denied:", {
-        userRole: req.user.role,
-        requiredRoles: roles,
-        userEmail: req.user.email,
-      });
-
       return res.status(403).json({
         success: false,
         message: "Bu işlem için yetkiniz bulunmuyor",
         code: "INSUFFICIENT_PERMISSIONS",
       });
     }
-
-    console.log(
-      "✅ Access granted:",
-      req.user.email,
-      "with role:",
-      req.user.role
-    );
     next();
   };
 };
