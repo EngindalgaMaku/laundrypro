@@ -376,4 +376,166 @@ router.post(
   }
 );
 
+// @route   POST /api/v1/:appSlug/business-types/bulk-activate
+// @desc    Bulk activate business types
+// @access  Private (SUPER_ADMIN)
+router.post(
+  "/bulk-activate",
+  auth,
+  requireRole(["SUPER_ADMIN"]),
+  async (req, res) => {
+    try {
+      const { businessTypeIds } = req.body;
+
+      if (!Array.isArray(businessTypeIds) || businessTypeIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "İşletme türü ID'leri dizisi gereklidir",
+        });
+      }
+
+      const updatedCount = await prisma.businessType.updateMany({
+        where: {
+          id: { in: businessTypeIds },
+        },
+        data: {
+          isActive: true,
+        },
+      });
+
+      console.log(`✅ ${updatedCount.count} business types activated`);
+
+      res.json({
+        success: true,
+        message: `${updatedCount.count} işletme türü başarıyla aktif edildi`,
+        data: { activatedCount: updatedCount.count },
+      });
+    } catch (error) {
+      console.error("❌ Business type bulk activation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "İşletme türleri aktif edilirken hata oluştu",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
+// @route   POST /api/v1/:appSlug/business-types/bulk-deactivate
+// @desc    Bulk deactivate business types
+// @access  Private (SUPER_ADMIN)
+router.post(
+  "/bulk-deactivate",
+  auth,
+  requireRole(["SUPER_ADMIN"]),
+  async (req, res) => {
+    try {
+      const { businessTypeIds } = req.body;
+
+      if (!Array.isArray(businessTypeIds) || businessTypeIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "İşletme türü ID'leri dizisi gereklidir",
+        });
+      }
+
+      // Check if any of the business types are being used by tenants
+      const businessTypesInUse = await prisma.businessType.findMany({
+        where: {
+          id: { in: businessTypeIds },
+        },
+        include: {
+          _count: {
+            select: {
+              tenants: true,
+            },
+          },
+        },
+      });
+
+      const inUseTypes = businessTypesInUse.filter(
+        (type) => type._count.tenants > 0
+      );
+
+      if (inUseTypes.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `${inUseTypes.length} işletme türü kullanımda olduğu için pasif edilemiyor`,
+          data: {
+            inUseTypes: inUseTypes.map((type) => ({
+              id: type.id,
+              name: type.displayName,
+              tenantsCount: type._count.tenants,
+            })),
+          },
+        });
+      }
+
+      const updatedCount = await prisma.businessType.updateMany({
+        where: {
+          id: { in: businessTypeIds },
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+      console.log(`✅ ${updatedCount.count} business types deactivated`);
+
+      res.json({
+        success: true,
+        message: `${updatedCount.count} işletme türü başarıyla pasif edildi`,
+        data: { deactivatedCount: updatedCount.count },
+      });
+    } catch (error) {
+      console.error("❌ Business type bulk deactivation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "İşletme türleri pasif edilirken hata oluştu",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
+// @route   GET /api/v1/:appSlug/business-types/admin/all
+// @desc    Get all business types including inactive ones (for admin panel)
+// @access  Private (SUPER_ADMIN, ADMIN)
+router.get(
+  "/admin/all",
+  auth,
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  async (req, res) => {
+    try {
+      const businessTypes = await prisma.businessType.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          _count: {
+            select: {
+              tenants: true,
+              productTemplates: true,
+              serviceTemplates: true,
+            },
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: { businessTypes },
+      });
+    } catch (error) {
+      console.error("❌ Admin business types fetch error:", error);
+      res.status(500).json({
+        success: false,
+        message: "İşletme türleri alınırken hata oluştu",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
 module.exports = router;
