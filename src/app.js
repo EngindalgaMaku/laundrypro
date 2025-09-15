@@ -21,6 +21,7 @@ const inventoryRoutes = require("./routes/inventory");
 const deliveryRoutes = require("./routes/delivery");
 const businessTypeRoutes = require("./routes/businessType");
 const productTemplateRoutes = require("./routes/productTemplate");
+const serviceTemplateRoutes = require("./routes/serviceTemplate");
 
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
@@ -178,6 +179,11 @@ app.use(
   appSlugMiddleware,
   productTemplateRoutes
 );
+app.use(
+  `${API_PREFIX}/:appSlug/service-templates`,
+  appSlugMiddleware,
+  serviceTemplateRoutes
+);
 
 // Backward compatibility - legacy routes (without app slug)
 app.use(
@@ -202,6 +208,7 @@ app.use(`${API_PREFIX}/inventory`, tenantMiddleware, inventoryRoutes);
 app.use(`${API_PREFIX}/delivery`, tenantMiddleware, deliveryRoutes);
 app.use(`${API_PREFIX}/business-types`, businessTypeRoutes);
 app.use(`${API_PREFIX}/product-templates`, productTemplateRoutes);
+app.use(`${API_PREFIX}/service-templates`, serviceTemplateRoutes);
 
 // Error handling middleware
 app.use(notFound);
