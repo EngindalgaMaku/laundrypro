@@ -1,428 +1,284 @@
 const { prisma } = require("../config/database");
 
-const defaultBusinessTypes = [
+const businessTypesData = [
   {
-    name: "CARPET_CLEANING",
-    displayName: "Halı & Koltuk Yıkama",
-    description: "Halı, koltuk, perde ve ev tekstili yıkama hizmeti",
-    icon: "home-account",
-    color: "#6366F1",
+    name: "carpet_cleaning",
+    displayName: "Halı Yıkama",
+    description: "Profesyonel halı ve kilim yıkama hizmetleri",
+    icon: "home-variant",
+    color: "#4A90E2",
     sortOrder: 1,
   },
   {
-    name: "DRY_CLEANING",
+    name: "dry_cleaning",
     displayName: "Kuru Temizleme",
-    description: "Kıyafet ve tekstil kuru temizleme hizmeti",
+    description: "Kıyafet ve kumaş kuru temizleme hizmetleri",
     icon: "tshirt-crew",
-    color: "#10B981",
+    color: "#7B68EE",
     sortOrder: 2,
   },
   {
-    name: "LAUNDRY_SERVICE",
-    displayName: "Çamaşırhane",
-    description: "Genel çamaşır yıkama ve ütüleme hizmeti",
+    name: "laundry_service",
+    displayName: "Çamaşır Yıkama",
+    description: "Genel çamaşır yıkama ve ütü hizmetleri",
     icon: "washing-machine",
-    color: "#06B6D4",
+    color: "#50C878",
     sortOrder: 3,
   },
   {
-    name: "SHOE_REPAIR",
-    displayName: "Ayakkabı Tamiri",
-    description: "Ayakkabı tamiri ve bakım hizmeti",
-    icon: "shoe-formal",
-    color: "#8B5CF6",
+    name: "upholstery_washing",
+    displayName: "Döşeme Yıkama",
+    description: "Koltuk, sandalye ve döşeme yıkama hizmetleri",
+    icon: "sofa",
+    color: "#45B7D1",
     sortOrder: 4,
-  },
-  {
-    name: "LEATHER_CLEANING",
-    displayName: "Deri Temizleme",
-    description: "Deri ürünler temizleme ve bakım hizmeti",
-    icon: "bag-personal",
-    color: "#F59E0B",
-    sortOrder: 5,
-  },
-  {
-    name: "ALTERATION_SERVICE",
-    displayName: "Terzi Hizmeti",
-    description: "Kıyafet değişikliği ve terzi hizmeti",
-    icon: "content-cut",
-    color: "#EC4899",
-    sortOrder: 6,
-  },
-  {
-    name: "GENERAL_CLEANING",
-    displayName: "Genel Temizlik",
-    description: "Ev ve ofis genel temizlik hizmeti",
-    icon: "broom",
-    color: "#84CC16",
-    sortOrder: 7,
-  },
-  {
-    name: "OTHER",
-    displayName: "Diğer",
-    description: "Yukarıdaki kategorilere girmeyen özel hizmetler",
-    icon: "dots-horizontal",
-    color: "#6B7280",
-    sortOrder: 99,
   },
 ];
 
-const productTemplates = [
-  // Halı & Koltuk Yıkama Templates
+const productTemplatesData = [
+  // Carpet Cleaning Products
   {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Halı Yıkama",
-    description: "Genel halı yıkama hizmeti",
+    businessTypeName: "carpet_cleaning",
+    name: "Yün Halı",
+    description: "El dokuma ve makine yünlü halılar",
     basePrice: 15.0,
     unit: "m2",
     category: "Halı",
-    isRequired: true,
     sortOrder: 1,
-    attributes: {
-      sizes: ["Küçük (1-5 m2)", "Orta (6-15 m2)", "Büyük (16+ m2)"],
-      materials: ["Yün", "Akrilik", "Pamuk", "Sentetik"],
-      services: [
-        "Sadece Yıkama",
-        "Yıkama + Dezenfektan",
-        "Yıkama + Leke Çıkarma",
-      ],
-    },
   },
   {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Koltuk Yıkama",
-    description: "Koltuk ve kanepe yıkama hizmeti",
-    basePrice: 25.0,
-    unit: "adet",
-    category: "Mobilya",
-    sortOrder: 2,
-    attributes: {
-      types: ["Tekli Koltuk", "İkili Koltuk", "Üçlü Koltuk", "Köşe Takımı"],
-      materials: ["Kumaş", "Deri", "Suni Deri"],
-      services: ["Sadece Yıkama", "Yıkama + Koruma"],
-    },
-  },
-  {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Perde Yıkama",
-    description: "Perde ve fon yıkama hizmeti",
+    businessTypeName: "carpet_cleaning",
+    name: "Sentetik Halı",
+    description: "Sentetik malzemeli halılar",
     basePrice: 8.0,
     unit: "m2",
-    category: "Perde",
+    category: "Halı",
+    sortOrder: 2,
+  },
+  {
+    businessTypeName: "carpet_cleaning",
+    name: "Antik Halı",
+    description: "Değerli ve antika halılar",
+    basePrice: 25.0,
+    unit: "m2",
+    category: "Özel Halı",
     sortOrder: 3,
-    attributes: {
-      types: ["Klasik Perde", "Tül Perde", "Fon Perde", "Zebra Perde"],
-      services: ["Yıkama", "Yıkama + Ütüleme", "Yıkama + Söküm/Takma"],
-    },
   },
 
-  // Kuru Temizleme Templates
+  // Dry Cleaning Products
   {
-    businessTypeName: "DRY_CLEANING",
+    businessTypeName: "dry_cleaning",
     name: "Takım Elbise",
-    description: "Erkek/kadın takım elbise kuru temizleme",
-    basePrice: 30.0,
+    description: "Erkek ve bayan takım elbiseleri",
+    basePrice: 35.0,
     unit: "adet",
-    category: "Resmi Giyim",
-    isRequired: true,
+    category: "Giyim",
     sortOrder: 1,
-    attributes: {
-      types: ["Erkek Takım", "Kadın Takım", "Blazer", "Pantolon"],
-      services: ["Kuru Temizleme", "Kuru Temizleme + Ütü", "Express (24 Saat)"],
-    },
   },
   {
-    businessTypeName: "DRY_CLEANING",
-    name: "Mont & Kaban",
-    description: "Kış kıyafetleri kuru temizleme",
-    basePrice: 40.0,
+    businessTypeName: "dry_cleaning",
+    name: "Elbise",
+    description: "Abiye ve günlük elbiseler",
+    basePrice: 25.0,
     unit: "adet",
-    category: "Kış Giyim",
+    category: "Giyim",
     sortOrder: 2,
-    attributes: {
-      types: ["Kaban", "Mont", "Yelek", "Kürk"],
-      services: ["Kuru Temizleme", "Kuru Temizleme + Koruma"],
-    },
-  },
-
-  // Çamaşırhane Templates
-  {
-    businessTypeName: "LAUNDRY_SERVICE",
-    name: "Günlük Çamaşır",
-    description: "Günlük giyim çamaşır yıkama",
-    basePrice: 3.5,
-    unit: "kg",
-    category: "Günlük Giyim",
-    isRequired: true,
-    sortOrder: 1,
-    attributes: {
-      services: ["Yıkama", "Yıkama + Ütü", "Yıkama + Kurutma"],
-      options: ["Normal", "Hassas", "Beyaz", "Renkli"],
-    },
   },
   {
-    businessTypeName: "LAUNDRY_SERVICE",
-    name: "Yatak Takımı",
-    description: "Nevresim, çarşaf, yastık kılıfı yıkama",
-    basePrice: 15.0,
-    unit: "takım",
-    category: "Ev Tekstili",
-    sortOrder: 2,
+    businessTypeName: "dry_cleaning",
+    name: "Palto/Mont",
+    description: "Kış paltoları ve montlar",
+    basePrice: 45.0,
+    unit: "adet",
+    category: "Dış Giyim",
+    sortOrder: 3,
   },
 ];
 
-const serviceTemplates = [
-  // Genel Hizmetler
+const serviceTemplatesData = [
+  // Carpet Cleaning Services
   {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Evden Alma - Eve Teslim",
-    description: "Ücretsiz evden alma ve eve teslim hizmeti",
-    basePrice: 0.0,
-    duration: 30,
-    category: "Lojistik",
+    businessTypeName: "carpet_cleaning",
+    name: "Standart Yıkama",
+    description: "Temel halı yıkama servisi",
+    basePrice: 0.0, // Base price included in product
+    duration: 240, // 4 hours
+    category: "Yıkama",
     sortOrder: 1,
   },
   {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Express Hizmet",
-    description: "24 saat içinde teslim (ek ücret)",
-    basePrice: 20.0,
-    duration: 0,
-    category: "Hız",
-    sortOrder: 2,
-  },
-  {
-    businessTypeName: "DRY_CLEANING",
-    name: "Leke Çıkarma",
-    description: "Zorlu lekeler için özel işlem",
-    basePrice: 10.0,
-    duration: 60,
-    category: "Özel İşlem",
-    sortOrder: 1,
-  },
-  {
-    businessTypeName: "LAUNDRY_SERVICE",
-    name: "Antibakteriyel Yıkama",
-    description: "Antibakteriyel dezenfektan ile yıkama",
+    businessTypeName: "carpet_cleaning",
+    name: "Derin Temizlik",
+    description: "Antibakteriyel derin temizlik",
     basePrice: 5.0,
-    duration: 0,
-    category: "Hijyen",
+    duration: 360, // 6 hours
+    category: "Özel Temizlik",
+    sortOrder: 2,
+  },
+  {
+    businessTypeName: "carpet_cleaning",
+    name: "Leke Çıkarma",
+    description: "İnatçı leke temizleme hizmeti",
+    basePrice: 10.0,
+    duration: 120, // 2 hours
+    category: "Özel İşlem",
+    sortOrder: 3,
+  },
+
+  // Dry Cleaning Services
+  {
+    businessTypeName: "dry_cleaning",
+    name: "Standart Temizlik",
+    description: "Genel kuru temizleme",
+    basePrice: 0.0,
+    duration: 180, // 3 hours
+    category: "Temizlik",
     sortOrder: 1,
   },
-];
-
-const pricingRules = [
-  // Hacim indirimi kuralı
   {
-    businessTypeName: "CARPET_CLEANING",
-    name: "Hacim İndirimi",
-    description: "50 m2 üzeri %10 indirim",
-    ruleType: "VOLUME_DISCOUNT",
-    conditions: {
-      minQuantity: 50,
-      unit: "m2",
-      productCategories: ["Halı"],
-    },
-    calculation: {
-      type: "percentage",
-      value: 10,
-      applyTo: "total",
-    },
-    priority: 1,
+    businessTypeName: "dry_cleaning",
+    name: "Express Servis",
+    description: "Aynı gün teslimat",
+    basePrice: 15.0,
+    duration: 60, // 1 hour
+    category: "Hızlı Servis",
+    sortOrder: 2,
   },
-  // Express hizmet ek ücreti
   {
-    businessTypeName: "DRY_CLEANING",
-    name: "Express Ücret",
-    description: "24 saat hızlı teslimat %50 ek ücret",
-    ruleType: "TIME_BASED",
-    conditions: {
-      serviceType: "express",
-      deliveryHours: 24,
-    },
-    calculation: {
-      type: "percentage",
-      value: 50,
-      applyTo: "total",
-    },
-    priority: 2,
-  },
-  // Müşteri sadakat indirimi
-  {
-    businessTypeName: "LAUNDRY_SERVICE",
-    name: "Sadık Müşteri İndirimi",
-    description: "10+ sipariş vermiş müşterilere %15 indirim",
-    ruleType: "CUSTOMER_TIER",
-    conditions: {
-      minOrders: 10,
-      customerTier: "loyal",
-    },
-    calculation: {
-      type: "percentage",
-      value: 15,
-      applyTo: "total",
-    },
-    priority: 3,
+    businessTypeName: "dry_cleaning",
+    name: "Ütü Servisi",
+    description: "Profesyonel ütü ve paketleme",
+    basePrice: 8.0,
+    duration: 30, // 30 minutes
+    category: "Ek Servis",
+    sortOrder: 3,
   },
 ];
 
 async function seedBusinessTypes() {
+  console.log("🌱 Business Types seed verisi ekleniyor...");
+
   try {
-    console.log("🌱 Seeding business types...");
-
-    // Create business types
-    for (const businessType of defaultBusinessTypes) {
-      const existingType = await prisma.businessType.findUnique({
-        where: { name: businessType.name },
+    // 1. Business Types'ları seed et
+    const businessTypes = {};
+    for (const btData of businessTypesData) {
+      const businessType = await prisma.businessType.upsert({
+        where: { name: btData.name },
+        update: {
+          displayName: btData.displayName,
+          description: btData.description,
+          icon: btData.icon,
+          color: btData.color,
+          sortOrder: btData.sortOrder,
+          isActive: true,
+        },
+        create: btData,
       });
 
-      if (!existingType) {
-        await prisma.businessType.create({
-          data: businessType,
-        });
-        console.log(`✅ Created business type: ${businessType.displayName}`);
-      } else {
-        console.log(
-          `⚠️  Business type already exists: ${businessType.displayName}`
-        );
-      }
+      businessTypes[btData.name] = businessType;
+      console.log(`✅ Business Type created: ${businessType.displayName}`);
     }
 
-    // Create product templates
-    console.log("\n🧩 Seeding product templates...");
-    for (const template of productTemplates) {
-      const businessType = await prisma.businessType.findUnique({
-        where: { name: template.businessTypeName },
-      });
+    // 2. Product Templates'leri seed et
+    for (const ptData of productTemplatesData) {
+      const businessType = businessTypes[ptData.businessTypeName];
+      if (!businessType) {
+        console.error(`❌ Business Type not found: ${ptData.businessTypeName}`);
+        continue;
+      }
 
-      if (businessType) {
-        const existingTemplate = await prisma.productTemplate.findFirst({
-          where: {
-            name: template.name,
+      const productTemplate = await prisma.productTemplate.upsert({
+        where: {
+          businessTypeId_name: {
             businessTypeId: businessType.id,
+            name: ptData.name,
           },
-        });
-
-        if (!existingTemplate) {
-          await prisma.productTemplate.create({
-            data: {
-              businessTypeId: businessType.id,
-              name: template.name,
-              description: template.description,
-              basePrice: template.basePrice,
-              unit: template.unit,
-              category: template.category,
-              isRequired: template.isRequired || false,
-              sortOrder: template.sortOrder,
-              attributes: template.attributes || {},
-            },
-          });
-          console.log(
-            `✅ Created product template: ${template.name} for ${template.businessTypeName}`
-          );
-        }
-      }
-    }
-
-    // Create service templates
-    console.log("\n🔧 Seeding service templates...");
-    for (const template of serviceTemplates) {
-      const businessType = await prisma.businessType.findUnique({
-        where: { name: template.businessTypeName },
+        },
+        update: {
+          description: ptData.description,
+          basePrice: ptData.basePrice,
+          unit: ptData.unit,
+          category: ptData.category,
+          sortOrder: ptData.sortOrder,
+        },
+        create: {
+          businessTypeId: businessType.id,
+          name: ptData.name,
+          description: ptData.description,
+          basePrice: ptData.basePrice,
+          unit: ptData.unit,
+          category: ptData.category,
+          sortOrder: ptData.sortOrder,
+        },
       });
 
-      if (businessType) {
-        const existingTemplate = await prisma.serviceTemplate.findFirst({
-          where: {
-            name: template.name,
-            businessTypeId: businessType.id,
-          },
-        });
-
-        if (!existingTemplate) {
-          await prisma.serviceTemplate.create({
-            data: {
-              businessTypeId: businessType.id,
-              name: template.name,
-              description: template.description,
-              basePrice: template.basePrice,
-              duration: template.duration,
-              category: template.category,
-              sortOrder: template.sortOrder,
-              requirements: template.requirements || {},
-            },
-          });
-          console.log(
-            `✅ Created service template: ${template.name} for ${template.businessTypeName}`
-          );
-        }
-      }
+      console.log(
+        `✅ Product Template created: ${ptData.name} for ${businessType.displayName}`
+      );
     }
 
-    // Create pricing rules
-    console.log("\n💰 Seeding pricing rules...");
-    for (const rule of pricingRules) {
-      const businessType = await prisma.businessType.findUnique({
-        where: { name: rule.businessTypeName },
+    // 3. Service Templates'leri seed et
+    for (const stData of serviceTemplatesData) {
+      const businessType = businessTypes[stData.businessTypeName];
+      if (!businessType) {
+        console.error(`❌ Business Type not found: ${stData.businessTypeName}`);
+        continue;
+      }
+
+      const serviceTemplate = await prisma.serviceTemplate.upsert({
+        where: {
+          businessTypeId_name: {
+            businessTypeId: businessType.id,
+            name: stData.name,
+          },
+        },
+        update: {
+          description: stData.description,
+          basePrice: stData.basePrice,
+          duration: stData.duration,
+          category: stData.category,
+          sortOrder: stData.sortOrder,
+        },
+        create: {
+          businessTypeId: businessType.id,
+          name: stData.name,
+          description: stData.description,
+          basePrice: stData.basePrice,
+          duration: stData.duration,
+          category: stData.category,
+          sortOrder: stData.sortOrder,
+        },
       });
 
-      if (businessType) {
-        const existingRule = await prisma.pricingRule.findFirst({
-          where: {
-            name: rule.name,
-            businessTypeId: businessType.id,
-          },
-        });
-
-        if (!existingRule) {
-          await prisma.pricingRule.create({
-            data: {
-              businessTypeId: businessType.id,
-              name: rule.name,
-              description: rule.description,
-              ruleType: rule.ruleType,
-              conditions: rule.conditions,
-              calculation: rule.calculation,
-              priority: rule.priority,
-            },
-          });
-          console.log(
-            `✅ Created pricing rule: ${rule.name} for ${rule.businessTypeName}`
-          );
-        }
-      }
+      console.log(
+        `✅ Service Template created: ${stData.name} for ${businessType.displayName}`
+      );
     }
 
-    console.log("\n🎉 Business types seeding completed successfully!");
+    console.log("🎉 Business Types seed işlemi başarıyla tamamlandı!");
 
-    // Display summary
-    const typesCount = await prisma.businessType.count();
-    const productTemplatesCount = await prisma.productTemplate.count();
-    const serviceTemplatesCount = await prisma.serviceTemplate.count();
-    const pricingRulesCount = await prisma.pricingRule.count();
-
-    console.log("\n📊 Summary:");
-    console.log(`  • Business Types: ${typesCount}`);
-    console.log(`  • Product Templates: ${productTemplatesCount}`);
-    console.log(`  • Service Templates: ${serviceTemplatesCount}`);
-    console.log(`  • Pricing Rules: ${pricingRulesCount}`);
+    return {
+      businessTypesCount: Object.keys(businessTypes).length,
+      productTemplatesCount: productTemplatesData.length,
+      serviceTemplatesCount: serviceTemplatesData.length,
+    };
   } catch (error) {
-    console.error("❌ Error seeding business types:", error);
+    console.error("❌ Business Types seed hatası:", error);
     throw error;
   }
 }
 
-// Run seeding if called directly
+// Eğer direkt çalıştırılıyorsa seed'i başlat
 if (require.main === module) {
   seedBusinessTypes()
-    .then(() => {
-      console.log("✅ Seeding completed");
+    .then((result) => {
+      console.log("📊 Seed İstatistikleri:", result);
       process.exit(0);
     })
     .catch((error) => {
-      console.error("❌ Seeding failed:", error);
+      console.error("❌ Seed işlemi başarısız:", error);
       process.exit(1);
     });
 }
 
-module.exports = { seedBusinessTypes };
+module.exports = seedBusinessTypes;

@@ -1,14 +1,14 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
-const { authenticateToken } = require("../middleware/auth");
-const { validateTenant } = require("../middleware/tenant");
+const { auth } = require("../middleware/auth");
+const tenantMiddleware = require("../middleware/tenant");
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Apply authentication and tenant validation to all routes
-router.use(authenticateToken);
-router.use(validateTenant);
+router.use(auth);
+router.use(tenantMiddleware);
 
 /**
  * @route GET /api/product-catalog/global
