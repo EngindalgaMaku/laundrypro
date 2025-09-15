@@ -50,7 +50,7 @@ router.post("/register", async (req, res) => {
         city,
         phone,
         email,
-        businessTypeId,
+        businessTypeIds, // Changed from businessTypeId to businessTypeIds (array)
       } = businessInfo;
       const { username, password } = accountInfo;
 
@@ -70,7 +70,7 @@ router.post("/register", async (req, res) => {
       var finalPhone = phone;
       var finalPassword = password;
       var finalDomain = null;
-      var finalBusinessTypeId = businessTypeId;
+      var finalBusinessTypeIds = businessTypeIds; // Array of business type IDs
     } else {
       // Backward compatibility - web format
       const {
@@ -132,17 +132,37 @@ router.post("/register", async (req, res) => {
 
     // Create tenant and admin user in transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Validate business type if provided
-      if (finalBusinessTypeId) {
-        const businessType = await tx.businessType.findUnique({
-          where: { id: finalBusinessTypeId, isActive: true },
+      // Validate business types if provided
+      let validatedBusinessTypes = [];
+      if (
+        finalBusinessTypeIds &&
+        Array.isArray(finalBusinessTypeIds) &&
+        finalBusinessTypeIds.length > 0
+      ) {
+        console.log("🔍 Validating business types:", finalBusinessTypeIds);
+
+        const businessTypes = await tx.businessType.findMany({
+          where: {
+            id: { in: finalBusinessTypeIds },
+            isActive: true,
+          },
         });
 
-        if (!businessType) {
-          throw new Error("Geçersiz işletme türü seçimi");
+        if (businessTypes.length !== finalBusinessTypeIds.length) {
+          const foundIds = businessTypes.map((bt) => bt.id);
+          const invalidIds = finalBusinessTypeIds.filter(
+            (id) => !foundIds.includes(id)
+          );
+          throw new Error(
+            `Geçersiz işletme türü seçimi: ${invalidIds.join(", ")}`
+          );
         }
 
-        console.log("✅ Business type validated:", businessType.displayName);
+        validatedBusinessTypes = businessTypes;
+        console.log(
+          "✅ Business types validated:",
+          businessTypes.map((bt) => bt.displayName).join(", ")
+        );
       }
 
       // Create tenant with app-specific settings
@@ -150,7 +170,6 @@ router.post("/register", async (req, res) => {
         name: finalTenantName,
         domain: finalDomain || null,
         type: appConfig.type, // App-specific type
-        businessTypeId: finalBusinessTypeId || null, // New dynamic business type
         settings: {
           ...appConfig.defaultSettings,
           appSlug: appSlug,
@@ -160,7 +179,11 @@ router.post("/register", async (req, res) => {
             country: businessInfo?.country || "Türkiye",
             city: businessInfo?.city || null,
             deviceInfo: deviceInfo || null,
-            businessType: businessInfo?.businessType || null,
+            businessTypes:
+              validatedBusinessTypes.map((bt) => ({
+                id: bt.id,
+                name: bt.displayName,
+              })) || null,
           },
         },
       };
@@ -169,11 +192,35 @@ router.post("/register", async (req, res) => {
         name: tenantData.name,
         type: tenantData.type,
         appSlug,
+        businessTypesCount: validatedBusinessTypes.length,
       });
 
       const tenant = await tx.tenant.create({
         data: tenantData,
       });
+
+      // Create tenant-business type relationships
+      if (validatedBusinessTypes.length > 0) {
+        console.log("🔗 Creating tenant-business type relationships...");
+
+        const tenantBusinessTypeData = validatedBusinessTypes.map(
+          (businessType, index) => ({
+            tenantId: tenant.id,
+            businessTypeId: businessType.id,
+            isPrimary: index === 0, // First selected business type is primary
+            isActive: true,
+          })
+        );
+
+        await tx.tenantBusinessType.createMany({
+          data: tenantBusinessTypeData,
+        });
+
+        console.log(
+          "✅ Created tenant-business type relationships:",
+          validatedBusinessTypes.map((bt) => bt.displayName).join(", ")
+        );
+      }
 
       // Create admin user
       const userData = {

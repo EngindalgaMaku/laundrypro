@@ -17,7 +17,6 @@ model Tenant {
   domain        String?     @unique
   subdomain     String?     @unique
   type          TenantType  @default(LAUNDRY_SERVICE) // Legacy app type
-  businessTypeId String?    // New dynamic business type
   settings      Json?       // Tenant-specific settings
   isActive      Boolean     @default(true)
   createdAt     DateTime    @default(now())
@@ -31,7 +30,7 @@ model Tenant {
   services                Service[]
   systemSettings          SystemSettings?
   systemBackups           SystemBackup[]
-  businessType            BusinessType? @relation("TenantBusinessType", fields: [businessTypeId], references: [id])
+  businessTypes           TenantBusinessType[] // Many-to-many relationship
   businessCustomization   BusinessCustomization?
   productCustomizations   BusinessProductCustomization[]
   serviceCustomizations   BusinessServiceCustomization[]
@@ -307,9 +306,27 @@ model BusinessType {
   productTemplates  ProductTemplate[]
   serviceTemplates  ServiceTemplate[]
   pricingRules      PricingRule[]
-  tenants           Tenant[] @relation("TenantBusinessType")
+  tenants           TenantBusinessType[] // Many-to-many relationship
   
   @@map("business_types")
+}
+
+// Junction table for Tenant-BusinessType many-to-many relationship
+model TenantBusinessType {
+  id             String       @id @default(uuid())
+  tenantId       String
+  businessTypeId String
+  isPrimary      Boolean      @default(false) // Mark one as primary business type
+  isActive       Boolean      @default(true)   // Allow deactivating specific business types
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessType   BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, businessTypeId])
+  @@map("tenant_business_types")
 }
 
 // Product Templates for each Business Type
