@@ -222,7 +222,7 @@ router.post("/register", async (req, res) => {
         );
       }
 
-      // Create admin user
+      // Create user (normal user, not admin)
       const userData = {
         tenantId: tenant.id,
         email: finalEmail,
@@ -230,7 +230,7 @@ router.post("/register", async (req, res) => {
         password: hashedPassword,
         firstName: finalFirstName,
         lastName: finalLastName,
-        role: "ADMIN",
+        role: "USER",
       };
 
       console.log("👤 Creating user:", {
