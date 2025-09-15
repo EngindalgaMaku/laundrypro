@@ -37,6 +37,44 @@ router.get("/", async (req, res) => {
   }
 });
 
+// @route   GET /api/v1/:appSlug/business-types/admin/all
+// @desc    Get all business types including inactive ones (for admin panel)
+// @access  Private (SUPER_ADMIN, ADMIN)
+router.get(
+  "/admin/all",
+  auth,
+  requireRole("SUPER_ADMIN", "ADMIN"),
+  async (req, res) => {
+    try {
+      const businessTypes = await prisma.businessType.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          _count: {
+            select: {
+              tenants: true,
+              productTemplates: true,
+              serviceTemplates: true,
+            },
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: { businessTypes },
+      });
+    } catch (error) {
+      console.error("❌ Admin business types fetch error:", error);
+      res.status(500).json({
+        success: false,
+        message: "İşletme türleri alınırken hata oluştu",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
 // @route   GET /api/v1/:appSlug/business-types/:id
 // @desc    Get single business type with templates
 // @access  Public
@@ -86,7 +124,7 @@ router.get("/:id", async (req, res) => {
 // @route   POST /api/v1/:appSlug/business-types
 // @desc    Create business type (Admin only)
 // @access  Private (SUPER_ADMIN)
-router.post("/", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
+router.post("/", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const {
       name,
@@ -147,7 +185,7 @@ router.post("/", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
 // @route   PUT /api/v1/:appSlug/business-types/:id
 // @desc    Update business type (Admin only)
 // @access  Private (SUPER_ADMIN)
-router.put("/:id", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
+router.put("/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, displayName, description, icon, color, sortOrder, isActive } =
@@ -223,7 +261,7 @@ router.put("/:id", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
 // @route   DELETE /api/v1/:appSlug/business-types/:id
 // @desc    Delete business type (Admin only)
 // @access  Private (SUPER_ADMIN)
-router.delete("/:id", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
+router.delete("/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -290,7 +328,7 @@ router.delete("/:id", auth, requireRole(["SUPER_ADMIN"]), async (req, res) => {
 router.post(
   "/:id/restore",
   auth,
-  requireRole(["SUPER_ADMIN"]),
+  requireRole("SUPER_ADMIN"),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -333,48 +371,42 @@ router.post(
 // @route   POST /api/v1/:appSlug/business-types/reorder
 // @desc    Reorder business types
 // @access  Private (SUPER_ADMIN)
-router.post(
-  "/reorder",
-  auth,
-  requireRole(["SUPER_ADMIN"]),
-  async (req, res) => {
-    try {
-      const { businessTypes } = req.body;
+router.post("/reorder", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
+  try {
+    const { businessTypes } = req.body;
 
-      if (!Array.isArray(businessTypes)) {
-        return res.status(400).json({
-          success: false,
-          message: "İşletme türleri dizisi gereklidir",
-        });
-      }
-
-      // Update sort order for each business type
-      const updatePromises = businessTypes.map((item, index) =>
-        prisma.businessType.update({
-          where: { id: item.id },
-          data: { sortOrder: index },
-        })
-      );
-
-      await Promise.all(updatePromises);
-
-      console.log("✅ Business types reordered");
-
-      res.json({
-        success: true,
-        message: "İşletme türleri başarıyla sıralandı",
-      });
-    } catch (error) {
-      console.error("❌ Business type reorder error:", error);
-      res.status(500).json({
+    if (!Array.isArray(businessTypes)) {
+      return res.status(400).json({
         success: false,
-        message: "İşletme türleri sıralanırken hata oluştu",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        message: "İşletme türleri dizisi gereklidir",
       });
     }
+
+    // Update sort order for each business type
+    const updatePromises = businessTypes.map((item, index) =>
+      prisma.businessType.update({
+        where: { id: item.id },
+        data: { sortOrder: index },
+      })
+    );
+
+    await Promise.all(updatePromises);
+
+    console.log("✅ Business types reordered");
+
+    res.json({
+      success: true,
+      message: "İşletme türleri başarıyla sıralandı",
+    });
+  } catch (error) {
+    console.error("❌ Business type reorder error:", error);
+    res.status(500).json({
+      success: false,
+      message: "İşletme türleri sıralanırken hata oluştu",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 // @route   POST /api/v1/:appSlug/business-types/bulk-activate
 // @desc    Bulk activate business types
@@ -382,7 +414,7 @@ router.post(
 router.post(
   "/bulk-activate",
   auth,
-  requireRole(["SUPER_ADMIN"]),
+  requireRole("SUPER_ADMIN"),
   async (req, res) => {
     try {
       const { businessTypeIds } = req.body;
@@ -428,7 +460,7 @@ router.post(
 router.post(
   "/bulk-deactivate",
   auth,
-  requireRole(["SUPER_ADMIN"]),
+  requireRole("SUPER_ADMIN"),
   async (req, res) => {
     try {
       const { businessTypeIds } = req.body;
@@ -493,44 +525,6 @@ router.post(
       res.status(500).json({
         success: false,
         message: "İşletme türleri pasif edilirken hata oluştu",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
-  }
-);
-
-// @route   GET /api/v1/:appSlug/business-types/admin/all
-// @desc    Get all business types including inactive ones (for admin panel)
-// @access  Private (SUPER_ADMIN, ADMIN)
-router.get(
-  "/admin/all",
-  auth,
-  requireRole(["SUPER_ADMIN", "ADMIN"]),
-  async (req, res) => {
-    try {
-      const businessTypes = await prisma.businessType.findMany({
-        orderBy: { sortOrder: "asc" },
-        include: {
-          _count: {
-            select: {
-              tenants: true,
-              productTemplates: true,
-              serviceTemplates: true,
-            },
-          },
-        },
-      });
-
-      res.json({
-        success: true,
-        data: { businessTypes },
-      });
-    } catch (error) {
-      console.error("❌ Admin business types fetch error:", error);
-      res.status(500).json({
-        success: false,
-        message: "İşletme türleri alınırken hata oluştu",
         error:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       });

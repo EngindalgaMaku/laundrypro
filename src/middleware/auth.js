@@ -60,6 +60,12 @@ const auth = async (req, res, next) => {
     // Set tenant ID for tenant middleware
     req.tenantId = user.tenantId;
 
+    console.log("✅ Auth middleware - User authenticated:", {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -91,7 +97,14 @@ const auth = async (req, res, next) => {
 // Role-based access control
 const authorize = (...roles) => {
   return (req, res, next) => {
+    console.log("🔐 Role authorization - Required roles:", roles);
+    console.log(
+      "🔐 Role authorization - User:",
+      req.user ? { role: req.user.role, email: req.user.email } : "No user"
+    );
+
     if (!req.user) {
+      console.log("❌ Role authorization - No user found");
       return res.status(401).json({
         success: false,
         message: "Authentication gerekli",
@@ -100,12 +113,23 @@ const authorize = (...roles) => {
     }
 
     if (!roles.includes(req.user.role)) {
+      console.log(
+        "❌ Role authorization - Permission denied. Required:",
+        roles,
+        "User has:",
+        req.user.role
+      );
       return res.status(403).json({
         success: false,
         message: "Bu işlem için yetkiniz bulunmuyor",
         code: "INSUFFICIENT_PERMISSIONS",
       });
     }
+
+    console.log(
+      "✅ Role authorization - Access granted for role:",
+      req.user.role
+    );
     next();
   };
 };
