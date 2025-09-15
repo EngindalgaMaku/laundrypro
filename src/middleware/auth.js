@@ -111,4 +111,7 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { auth, authorize };
+// Alias for backward compatibility and cleaner usage
+const requireRole = authorize;
+
+module.exports = { auth, authorize, requireRole };

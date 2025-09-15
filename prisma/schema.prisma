@@ -12,24 +12,29 @@ datasource db {
 
 // Tenant Model (Multi-tenant SaaS)
 model Tenant {
-  id          String     @id @default(uuid())
-  name        String
-  domain      String?    @unique
-  subdomain   String?    @unique
-  type        TenantType @default(LAUNDRY_SERVICE) // App type
-  settings    Json?      // Tenant-specific settings
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id            String      @id @default(uuid())
+  name          String
+  domain        String?     @unique
+  subdomain     String?     @unique
+  type          TenantType  @default(LAUNDRY_SERVICE) // Legacy app type
+  businessTypeId String?    // New dynamic business type
+  settings      Json?       // Tenant-specific settings
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   // Relations
-  users          User[]
-  customers      Customer[]
-  orders         Order[]
-  vehicles       Vehicle[]
-  services       Service[]
-  systemSettings SystemSettings?
-  systemBackups  SystemBackup[]
+  users                   User[]
+  customers               Customer[]
+  orders                  Order[]
+  vehicles                Vehicle[]
+  services                Service[]
+  systemSettings          SystemSettings?
+  systemBackups           SystemBackup[]
+  businessType            BusinessType? @relation("TenantBusinessType", fields: [businessTypeId], references: [id])
+  businessCustomization   BusinessCustomization?
+  productCustomizations   BusinessProductCustomization[]
+  serviceCustomizations   BusinessServiceCustomization[]
 
   @@map("tenants")
 }
@@ -132,22 +137,28 @@ model OrderItem {
   @@map("order_items")
 }
 
-// Services Model (Halı yıkama hizmetleri)
+// Services Model - Enhanced with template relationships
 model Service {
-  id          String      @id @default(uuid())
-  tenantId    String
-  name        String
-  description String?
-  price       Decimal     @db.Decimal(10, 2)
-  unit        String      @default("adet") // adet, m2, kg
-  category    String?
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                String           @id @default(uuid())
+  tenantId          String
+  name              String
+  description       String?
+  price             Decimal          @db.Decimal(10, 2)
+  unit              String           @default("adet") // adet, m2, kg
+  category          String?
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  // Template relationships (optional)
+  productTemplateId String?
+  serviceTemplateId String?
 
   // Relations
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
+  tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderItems        OrderItem[]
+  productTemplate   ProductTemplate? @relation("ServiceProductTemplate", fields: [productTemplateId], references: [id])
+  serviceTemplate   ServiceTemplate? @relation("ServiceServiceTemplate", fields: [serviceTemplateId], references: [id])
 
   @@map("services")
 }
@@ -277,6 +288,166 @@ enum TenantType {
   RETAIL            // Perakende satış
   WORKSHOP          // Atölye/tamirci
   HEALTHCARE        // Sağlık hizmetleri
+}
+
+// Dynamic Business Types - Configurable by Admin
+model BusinessType {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  displayName       String   // Turkish display name
+  description       String?
+  icon              String?  // Icon name for mobile
+  color             String?  // Theme color for this business type
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  productTemplates  ProductTemplate[]
+  serviceTemplates  ServiceTemplate[]
+  pricingRules      PricingRule[]
+  tenants           Tenant[] @relation("TenantBusinessType")
+  
+  @@map("business_types")
+}
+
+// Product Templates for each Business Type
+model ProductTemplate {
+  id              String      @id @default(uuid())
+  businessTypeId  String
+  name            String
+  description     String?
+  basePrice       Decimal     @db.Decimal(10, 2)
+  unit            String      @default("adet") // adet, m2, kg, metre, litre
+  category        String?
+  isActive        Boolean     @default(true)
+  isRequired      Boolean     @default(false) // Required for this business type
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Additional fields for different business types
+  attributes      Json?       // Flexible attributes (size, color, material, etc.)
+  
+  // Relations
+  businessType    BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  services        Service[]    @relation("ServiceProductTemplate")
+  customizations  BusinessProductCustomization[]
+  
+  @@map("product_templates")
+}
+
+// Service Templates for each Business Type
+model ServiceTemplate {
+  id              String      @id @default(uuid())
+  businessTypeId  String
+  name            String
+  description     String?
+  basePrice       Decimal     @db.Decimal(10, 2)
+  duration        Int?        // Duration in minutes
+  category        String?
+  isActive        Boolean     @default(true)
+  isRequired      Boolean     @default(false)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Additional service properties
+  requirements    Json?       // Special requirements (equipment, skills, etc.)
+  
+  // Relations
+  businessType    BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  services        Service[]    @relation("ServiceServiceTemplate")
+  customizations  BusinessServiceCustomization[]
+  
+  @@map("service_templates")
+}
+
+// Flexible Pricing Rules
+model PricingRule {
+  id              String      @id @default(uuid())
+  businessTypeId  String
+  name            String
+  description     String?
+  ruleType        PricingRuleType
+  conditions      Json        // Conditions for when this rule applies
+  calculation     Json        // How to calculate the price
+  isActive        Boolean     @default(true)
+  priority        Int         @default(0) // Higher priority rules override lower
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  businessType    BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  
+  @@map("pricing_rules")
+}
+
+// Business Customizations - Tenant-specific configurations
+model BusinessCustomization {
+  id          String   @id @default(uuid())
+  tenantId    String   @unique
+  settings    Json     // Custom business settings
+  theme       Json?    // Custom theme colors, logos
+  features    Json?    // Enabled/disabled features
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@map("business_customizations")
+}
+
+// Tenant's custom products based on templates
+model BusinessProductCustomization {
+  id                String          @id @default(uuid())
+  tenantId          String
+  productTemplateId String
+  customName        String?         // Custom name override
+  customPrice       Decimal?        @db.Decimal(10, 2) // Custom price override
+  customAttributes  Json?           // Custom attributes
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productTemplate   ProductTemplate @relation(fields: [productTemplateId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, productTemplateId])
+  @@map("business_product_customizations")
+}
+
+// Tenant's custom services based on templates
+model BusinessServiceCustomization {
+  id                String          @id @default(uuid())
+  tenantId          String
+  serviceTemplateId String
+  customName        String?         // Custom name override
+  customPrice       Decimal?        @db.Decimal(10, 2) // Custom price override
+  customDuration    Int?            // Custom duration override
+  customRequirements Json?          // Custom requirements
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceTemplate   ServiceTemplate @relation(fields: [serviceTemplateId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, serviceTemplateId])
+  @@map("business_service_customizations")
+}
+
+enum PricingRuleType {
+  VOLUME_DISCOUNT     // Volume-based discounts
+  TIME_BASED         // Time-based pricing (rush orders, etc.)
+  CUSTOMER_TIER      // Customer tier-based pricing
+  PRODUCT_COMBO      // Product combination discounts
+  SEASONAL           // Seasonal pricing adjustments
+  CUSTOM_FORMULA     // Custom calculation formula
 }
 
 enum NotificationType {

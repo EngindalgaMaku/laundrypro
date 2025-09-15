@@ -44,7 +44,14 @@ router.post("/register", async (req, res) => {
 
     // Mobile app için yeni format kontrolü
     if (businessInfo && accountInfo) {
-      const { name: tenantName, country, city, phone, email } = businessInfo;
+      const {
+        name: tenantName,
+        country,
+        city,
+        phone,
+        email,
+        businessTypeId,
+      } = businessInfo;
       const { username, password } = accountInfo;
 
       // Validate required fields
@@ -63,6 +70,7 @@ router.post("/register", async (req, res) => {
       var finalPhone = phone;
       var finalPassword = password;
       var finalDomain = null;
+      var finalBusinessTypeId = businessTypeId;
     } else {
       // Backward compatibility - web format
       const {
@@ -124,11 +132,25 @@ router.post("/register", async (req, res) => {
 
     // Create tenant and admin user in transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Validate business type if provided
+      if (finalBusinessTypeId) {
+        const businessType = await tx.businessType.findUnique({
+          where: { id: finalBusinessTypeId, isActive: true },
+        });
+
+        if (!businessType) {
+          throw new Error("Geçersiz işletme türü seçimi");
+        }
+
+        console.log("✅ Business type validated:", businessType.displayName);
+      }
+
       // Create tenant with app-specific settings
       const tenantData = {
         name: finalTenantName,
         domain: finalDomain || null,
         type: appConfig.type, // App-specific type
+        businessTypeId: finalBusinessTypeId || null, // New dynamic business type
         settings: {
           ...appConfig.defaultSettings,
           appSlug: appSlug,
@@ -138,6 +160,7 @@ router.post("/register", async (req, res) => {
             country: businessInfo?.country || "Türkiye",
             city: businessInfo?.city || null,
             deviceInfo: deviceInfo || null,
+            businessType: businessInfo?.businessType || null,
           },
         },
       };
