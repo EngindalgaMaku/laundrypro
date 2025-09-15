@@ -175,6 +175,7 @@ app.use(
 app.use(
   `${API_PREFIX}/:appSlug/business-types`,
   appSlugMiddleware,
+  tenantMiddleware,
   businessTypeRoutes
 );
 app.use(

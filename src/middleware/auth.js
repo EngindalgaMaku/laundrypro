@@ -91,15 +91,7 @@ const auth = async (req, res, next) => {
 // Role-based access control
 const authorize = (...roles) => {
   return (req, res, next) => {
-    console.log(
-      `🔐 Role check - Required: [${roles.join(", ")}], User has: ${
-        req.user?.role
-      }`
-    );
-    console.log(`👤 User object:`, req.user);
-
     if (!req.user) {
-      console.log(`❌ No user in request`);
       return res.status(401).json({
         success: false,
         message: "Authentication gerekli",
@@ -108,19 +100,12 @@ const authorize = (...roles) => {
     }
 
     if (!roles.includes(req.user.role)) {
-      console.log(
-        `❌ Role mismatch - Required: [${roles.join(", ")}], User has: ${
-          req.user.role
-        }`
-      );
       return res.status(403).json({
         success: false,
         message: "Bu işlem için yetkiniz bulunmuyor",
         code: "INSUFFICIENT_PERMISSIONS",
       });
     }
-
-    console.log(`✅ Role check passed for ${req.user.role}`);
     next();
   };
 };
