@@ -636,21 +636,24 @@ router.post("/logout", auth, (req, res) => {
 // @access  Public
 router.get("/find-tenant", async (req, res) => {
   try {
-    const { username } = req.query;
+    const { email, username } = req.query;
 
-    if (!username) {
+    // Support both email and username parameters for backward compatibility
+    const searchEmail = email || username;
+
+    if (!searchEmail) {
       return res.status(400).json({
         success: false,
-        message: "Username gerekli",
+        message: "Email gerekli",
       });
     }
 
-    console.log("🔍 Finding tenant for username:", username);
+    console.log("🔍 Finding tenant for email:", searchEmail);
 
     // Find user by email
     const user = await prisma.user.findFirst({
       where: {
-        email: username,
+        email: searchEmail,
         isActive: true,
       },
       include: {
