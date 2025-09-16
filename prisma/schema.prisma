@@ -17,7 +17,6 @@ model Tenant {
   createdAt             DateTime                       @default(now())
   updatedAt             DateTime                       @updatedAt
   type                  TenantType                     @default(LAUNDRY_SERVICE)
-  businessTypeId        String?
   businessCustomization BusinessCustomization?
   productCustomizations BusinessProductCustomization[]
   serviceCustomizations BusinessServiceCustomization[]
@@ -26,11 +25,26 @@ model Tenant {
   services              Service[]
   systemBackups         SystemBackup[]
   systemSettings        SystemSettings?
-  business_types        BusinessType?                  @relation(fields: [businessTypeId], references: [id])
+  tenantBusinessTypes   TenantBusinessType[]
   users                 User[]
   vehicles              Vehicle[]
 
   @@map("tenants")
+}
+
+model TenantBusinessType {
+  id             String      @id @default(uuid())
+  tenantId       String
+  businessTypeId String
+  isPrimary      Boolean     @default(false)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  businessType   BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, businessTypeId])
+  @@map("tenant_business_types")
 }
 
 model User {
@@ -227,20 +241,20 @@ model SystemBackup {
 }
 
 model BusinessType {
-  id               String            @id @default(uuid())
-  name             String            @unique
-  displayName      String
-  description      String?
-  icon             String?
-  color            String?
-  isActive         Boolean           @default(true)
-  sortOrder        Int               @default(0)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  pricingRules     PricingRule[]
-  productTemplates ProductTemplate[]
-  serviceTemplates ServiceTemplate[]
-  tenants          Tenant[]
+  id                  String                @id @default(uuid())
+  name                String                @unique
+  displayName         String
+  description         String?
+  icon                String?
+  color               String?
+  isActive            Boolean               @default(true)
+  sortOrder           Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  pricingRules        PricingRule[]
+  productTemplates    ProductTemplate[]
+  serviceTemplates    ServiceTemplate[]
+  tenantBusinessTypes TenantBusinessType[]
 
   @@map("business_types")
 }
@@ -357,6 +371,7 @@ enum UserRole {
   MANAGER
   EMPLOYEE
   SUPER_ADMIN
+  BUSINESS_OWNER
 }
 
 enum OrderStatus {
