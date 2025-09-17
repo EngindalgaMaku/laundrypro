@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
       include: {
         _count: {
           select: {
-            tenants: true,
+            tenantBusinessTypes: true,
             productTemplates: true,
             serviceTemplates: true,
           },
@@ -51,7 +51,7 @@ router.get(
         include: {
           _count: {
             select: {
-              tenants: true,
+              tenantBusinessTypes: true,
               productTemplates: true,
               serviceTemplates: true,
             },
@@ -233,7 +233,7 @@ router.put("/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
       include: {
         _count: {
           select: {
-            tenants: true,
+            tenantBusinessTypes: true,
             productTemplates: true,
             serviceTemplates: true,
           },
@@ -271,7 +271,7 @@ router.delete("/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
       include: {
         _count: {
           select: {
-            tenants: true,
+            tenantBusinessTypes: true,
             productTemplates: true,
             serviceTemplates: true,
           },
@@ -287,12 +287,12 @@ router.delete("/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
     }
 
     // Check if business type is being used
-    if (businessType._count.tenants > 0) {
+    if (businessType._count.tenantBusinessTypes > 0) {
       return res.status(400).json({
         success: false,
         message: "Bu işletme türü kullanımda olduğu için silinemiyor",
         data: {
-          tenantsCount: businessType._count.tenants,
+          tenantsCount: businessType._count.tenantBusinessTypes,
           templatesCount:
             businessType._count.productTemplates +
             businessType._count.serviceTemplates,
@@ -480,14 +480,14 @@ router.post(
         include: {
           _count: {
             select: {
-              tenants: true,
+              tenantBusinessTypes: true,
             },
           },
         },
       });
 
       const inUseTypes = businessTypesInUse.filter(
-        (type) => type._count.tenants > 0
+        (type) => type._count.tenantBusinessTypes > 0
       );
 
       if (inUseTypes.length > 0) {
@@ -498,7 +498,7 @@ router.post(
             inUseTypes: inUseTypes.map((type) => ({
               id: type.id,
               name: type.displayName,
-              tenantsCount: type._count.tenants,
+              tenantsCount: type._count.tenantBusinessTypes,
             })),
           },
         });

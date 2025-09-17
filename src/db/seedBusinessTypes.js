@@ -187,30 +187,39 @@ async function seedBusinessTypes() {
         continue;
       }
 
-      const productTemplate = await prisma.productTemplate.upsert({
+      // Check if product template already exists
+      const existingProduct = await prisma.productTemplate.findFirst({
         where: {
-          businessTypeId_name: {
-            businessTypeId: businessType.id,
-            name: ptData.name,
-          },
-        },
-        update: {
-          description: ptData.description,
-          basePrice: ptData.basePrice,
-          unit: ptData.unit,
-          category: ptData.category,
-          sortOrder: ptData.sortOrder,
-        },
-        create: {
           businessTypeId: businessType.id,
           name: ptData.name,
-          description: ptData.description,
-          basePrice: ptData.basePrice,
-          unit: ptData.unit,
-          category: ptData.category,
-          sortOrder: ptData.sortOrder,
         },
       });
+
+      let productTemplate;
+      if (existingProduct) {
+        productTemplate = await prisma.productTemplate.update({
+          where: { id: existingProduct.id },
+          data: {
+            description: ptData.description,
+            basePrice: ptData.basePrice,
+            unit: ptData.unit,
+            category: ptData.category,
+            sortOrder: ptData.sortOrder,
+          },
+        });
+      } else {
+        productTemplate = await prisma.productTemplate.create({
+          data: {
+            businessTypeId: businessType.id,
+            name: ptData.name,
+            description: ptData.description,
+            basePrice: ptData.basePrice,
+            unit: ptData.unit,
+            category: ptData.category,
+            sortOrder: ptData.sortOrder,
+          },
+        });
+      }
 
       console.log(
         `✅ Product Template created: ${ptData.name} for ${businessType.displayName}`
@@ -225,30 +234,39 @@ async function seedBusinessTypes() {
         continue;
       }
 
-      const serviceTemplate = await prisma.serviceTemplate.upsert({
+      // Check if service template already exists
+      const existingService = await prisma.serviceTemplate.findFirst({
         where: {
-          businessTypeId_name: {
-            businessTypeId: businessType.id,
-            name: stData.name,
-          },
-        },
-        update: {
-          description: stData.description,
-          basePrice: stData.basePrice,
-          duration: stData.duration,
-          category: stData.category,
-          sortOrder: stData.sortOrder,
-        },
-        create: {
           businessTypeId: businessType.id,
           name: stData.name,
-          description: stData.description,
-          basePrice: stData.basePrice,
-          duration: stData.duration,
-          category: stData.category,
-          sortOrder: stData.sortOrder,
         },
       });
+
+      let serviceTemplate;
+      if (existingService) {
+        serviceTemplate = await prisma.serviceTemplate.update({
+          where: { id: existingService.id },
+          data: {
+            description: stData.description,
+            basePrice: stData.basePrice,
+            duration: stData.duration,
+            category: stData.category,
+            sortOrder: stData.sortOrder,
+          },
+        });
+      } else {
+        serviceTemplate = await prisma.serviceTemplate.create({
+          data: {
+            businessTypeId: businessType.id,
+            name: stData.name,
+            description: stData.description,
+            basePrice: stData.basePrice,
+            duration: stData.duration,
+            category: stData.category,
+            sortOrder: stData.sortOrder,
+          },
+        });
+      }
 
       console.log(
         `✅ Service Template created: ${stData.name} for ${businessType.displayName}`
